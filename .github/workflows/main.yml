@@ -1,0 +1,80 @@
+name: dbt Build Check
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+env:
+  DBT_PROFILES_DIR: ./dbt
+  # dbt profiles environment variables
+
+  # BigQuery service account
+  KEY_ID: ${{secrets.SETUP_GCLOUD_KEY_ID}}
+  PRIVATE_KEY: ${{secrets.SETUP_GCLOUD_KEY}}
+  CLIENT_EMAIL: ${{secrets.SETUP_GCLOUD_EMAIL}}
+  CLIENT_ID: ${{secrets.SETUP_GCLOUD_CLIENT_ID}}
+  AUTH_PROVIDER_X509: ${{secrets.SETUP_GCLOUD_AUTH_PROVIDER_X509}}
+  CLIENT_X509: ${{secrets.SETUP_GCLOUD_CLIENT_X509}}
+
+  # Snowflake
+  ACCOUNT_ID: ${{secrets.SETUP_ACCOUNT_ID}}
+  SNOWFLAKE_USER: ${{secrets.SETUP_SNOWFLAKE_USER}}
+  SNOWFLAKE_PASSWORD: ${{secrets.SETUP_SNOWFLAKE_PASSWORD}}
+  SNOWFLAKE_ROLE: ${{secrets.SETUP_SNOWFLAKE_ROLE}}
+  SNOWFLAKE_WAREHOUSE: ${{secrets.SETUP_SNOWFLAKE_WAREHOUSE}}
+  SNOWFLAKE_DATABASE: ${{secrets.SETUP_SNOWFLAKE_DATABASE}}
+  SNOWFLAKE_SCHEMA: ${{secrets.SETUP_SNOWFLAKE_SCHEMA}}
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out the repository code
+        uses: actions/checkout@v2
+
+      - name: Set up Python
+        uses: actions/setup-python@v1
+        with:
+          python-version: "3.8.x"
+
+      - name: Install Python dependencies
+        run: pip3 install -r ./dbt/requirements.txt
+
+      - name: Point dbt to the dbt project directory
+        run: export DBT_PROFILES_DIR
+
+      - name: Install dbt dependencies
+        run: dbt deps --project-dir=$DBT_PROFILES_DIR
+
+      - name: Run dbt debug
+        run: dbt debug --target ci --project-dir=$DBT_PROFILES_DIR
+
+      - name: Seed ci target
+        run: dbt seed --target ci --project-dir=$DBT_PROFILES_DIR
+
+      # - name: Run tests against sources only
+      #   run: dbt test --target ci --models source:*
+
+      - name: Run dbt against staging
+        run: dbt run --target ci --project-dir=$DBT_PROFILES_DIR
+
+      - name: Run tests against models only (no source tests but all others i.e. schema and data tests against models)
+        run: dbt test --target ci --exclude source:* --project-dir=$DBT_PROFILES_DIR
+
+      # - name: Build Docs
+      #   run: dbt docs generate --target ci --profiles-dir=$DBT_PROFILES_DIR
+      #
+      # - name: Build Docs Production
+      #   if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+      #   run: dbt docs generate --target prod --profiles-dir=$DBT_PROFILES_DIR
+
+      # - name: Deploy Docs
+      #   uses: nwtgck/actions-netlify@v1.0
+      #   with:
+      #     publish-dir: './target'
+      #     production-branch: main
+      #     deploy-message: "Deploy from GitHub Actions"
+      #     github-token: ${{secrets.GITHUB_TOKEN}}

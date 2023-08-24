@@ -1,0 +1,13 @@
+backend = "server" # or "cloud"
+
+[server]
+host = "http://apollo"
+port = "4200"
+endpoint = "${server.host}:${server.port}"
+# IF USING EXTERNAL POSTGRES SERVER: Update this DB connection URL. 
+# [server.database]
+# connection_url = "postgres://<username>:<password>@hostname:<port>/<dbname>"
+
+[cloud]
+api = "${${backend}.endpoint}" # so if backend == server this will use server.endpoint and if cloud will use cloud.endpoint
+endpoint = "https://api.prefect.io"

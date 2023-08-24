@@ -1,0 +1,37 @@
+eve_bigquery:
+  target: ci
+  outputs:
+
+    # BigQuery
+    ci:
+      type: bigquery
+      method: service-account-json
+      project: # GCP Project ID
+      dataset: dbt_ci # Schema for the CI run
+      location: europe-west2
+      threads: 12
+      timeout_seconds: 300
+      priority: interactive
+      keyfile_json:
+        type: service_account
+        project_id: # GCP Project ID
+        private_key_id: "{{ env_var('KEY_ID') }}"
+        private_key: "{{ env_var('PRIVATE_KEY') }}"
+        client_email: "{{ env_var('CLIENT_EMAIL') }}"
+        client_id: "{{ env_var('CLIENT_ID') }}"
+        auth_uri: https://accounts.google.com/o/oauth2/auth
+        token_uri: https://oauth2.googleapis.com/token
+        auth_provider_x509_cert_url: "{{ env_var('AUTH_PROVIDER_X509') }}"
+        client_x509_cert_url: "{{ env_var('CLIENT_X509') }}"
+
+    # Snowflake
+    ci: 
+      type: snowflake
+      account: "{{  env_var('ACCOUNT_ID') }}"
+      user: "{{ env_var('SNOWFLAKE_USER') }}"
+      password: "{{ env_var('SNOWFLAKE_PASSWORD') }}"
+      role: "{{ env_var('SNOWFLAKE_ROLE') }}"
+      warehouse: "{{ env_var('SNOWFLAKE_WAREHOUSE') }}"
+      database: "{{ env_var('SNOWFLAKE_DATABASE') }}"
+      schema: "{{ env_var('SNOWFLAKE_SCHEMA') }}"
+      threads: 12
